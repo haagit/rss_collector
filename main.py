@@ -13,7 +13,12 @@ def main() :
     logger.info("main : 보안뉴스 수집 및 db 저장 시작")
     
     # 파일 경로 설정 : __file__은 현재 이 파일의 위치, os.path 사용해서 상위폴더 설정 찾기
-    conf_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),'.db_conn_conf.ini')
+    # conf_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),'.db_conn_conf.ini')
+    # os.path.dirname(os.path.dirname(__file__)) : /home/rdbbot -> db연동 정보 못찾아서 에러남
+    # os.path.dirname(__file__): /home/rdbbot/rss_collector  설정파일 여기있음
+    # __file__ : /home/rdbbot/rss_collector/main.py
+    conf_path = os.path.join(os.path.dirname(__file__), '.db_conn_conf.ini')
+    
     conn = None
     
     try :
