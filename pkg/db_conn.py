@@ -13,7 +13,7 @@ def load_db_conf(conf_path) :
     '''
     if not os.path.exists(conf_path) :
         logger.error(f"설정 파일 못찾았습니다 : {conf_path}")
-        return FileNotFoundError(f"설정파일 없음: {conf_path}")
+        raise FileNotFoundError(f"설정파일 없음: {conf_path}")
 
     config = configparser.ConfigParser() # 객체 반환
     config.read(conf_path)
