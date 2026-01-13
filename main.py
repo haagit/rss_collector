@@ -10,26 +10,20 @@ def main() :
     list_news = run_collection()
     
     if not list_news:
-        logger.warning("수집된 뉴스 데이터 없음")
+        logger.warning("수집된 뉴스 데이터 없습니다. 작업을 종료합니다.")
         return
     
     conn = None
     try :
+        # if conn is None: 삭제해 가독성 향상
         conn = get_connection()
-        
-        if conn is None :
-            logger.error("DB연결 실패")
-            print("db연결 설정 확인하세요")
-            return
-
         insert_news_many(conn, list_news)
         logger.info("정상 종료")
-        print(f"{len(list_news)}건의 뉴스가 db에 저장되었습니다")
         
     except Exception as e:
-        # db연결 실패 등 모든 에러 여기서 기록 get_connection()에서 에러 올려보낸 경우
-        logger.error(f"메인 실행 중 오류 발생 : {e}")
-        print(f"에러 발생 {e}")
+        # db연결 실패 등 모든 에러 get_connection()에서는 logger.error()
+        # 여기서는 critical 로그레벨로 차이를 두어 로그 필터링 고려
+        logger.critical(f"프로젝트 실행 중 오류 발생 실행 중단: {e}")
     finally:
         if conn:
             conn.close()

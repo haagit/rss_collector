@@ -8,15 +8,6 @@ import configparser
 setup_logging("logs/db_work.log")
 logger = logging.getLogger(__name__)
 
-# db 접속
-#DB_CONFIG = {
-#    "host": "localhost",
-#    "port": 3306,
-#    "user": "ktech",         
-#    "password": "ktech!@#$",  
-#    "database": "news_hub"    
-#}
-
 def get_connection():
     """
     MariaDB 연결 객체 반환 : c에서 mysql_real_connect()역할 
@@ -45,21 +36,12 @@ def get_connection():
     
     except mariadb.Error as e:
         logger.error(f"MariaDB 연결 실패: {e}")
-        return None
+        raise e
     
     except KeyError as e:
         logger.error(f"설정 파일에서 키를 찾을 수 없습니다: {e}")
-        return None
+        raise e
     
-    
-    # 설정 파일 읽어오기 전 코드    
-    # try:
-    #     conn = mariadb.connect(**DB_CONFIG)
-    #     logger.info("MariaDB 연결 성공")
-    #     return conn
-    # except mariadb.Error as e:
-    #     logger.error(f"MariaDB 연결 실패: {e}")
-    #     raise e # 상위 함수 main.py에 에러 보냄 그럼 상위함수에서 재시도 하거나 안전종료 가능, 로그 기록 및 알림 가능
 
 def insert_news_many(conn, data_list : list) :
     '''
@@ -143,31 +125,3 @@ if __name__ == "__main__" :
         if 'conn' in locals() and conn:
             conn.close()
             print("[*] DB 연결 종료")
-
-
-
-
-
-# def insert_news(cursor, conn, data):
-#     """중복 기사는 업데이트, 새 기사는 삽입"""
-#     # sql문 준비 : unique key : idx로 변경
-#     sql = """
-#     INSERT INTO boannews_rss (
-#         title, link, creator, written_dt, description, category, idx
-#     ) VALUES (%s, %s, %s, %s, %s, %s, %s)
-#     ON DUPLICATE KEY UPDATE
-#         title = VALUES(title),
-#         link = VALUES(link),           
-#         written_dt = VALUES(written_dt),
-#         description = VALUES(description),
-#         category = VALUES(category),
-#         save_at = CURRENT_TIMESTAMP()
-#     """
-#     try:
-#         # 매개변수 바인딩 및 실행
-#         cursor.execute(sql, data)
-#         conn.commit()
-#         logger.debug(f"데이터 처리 완료: {data[0][:15]}...")
-#     except mariadb.Error as e:
-#         # 에러 발생시 로그 기록
-#         logger.error(f"데이터 저장 실패 (Link: {data[1]}): {e}")
