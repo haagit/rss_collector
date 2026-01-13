@@ -5,25 +5,33 @@ from .logging_config import setup_logging
 import os
 import configparser
 
-setup_logging("logs/db_work.log")
 logger = logging.getLogger(__name__)
 
-def get_connection():
-    """
-    MariaDB 연결 객체 반환 : c에서 mysql_real_connect()역할 
-    숨김 설정 파일 (.db_conn_conf.ini)에서 db정보 읽어오기
-    """
-    config = configparser.ConfigParser() # 객체 반환
-    
-    # 1. 파일 경로 설정 : __file__은 현재 이 파일의 위치, os.path 사용해서 상위폴더 설정 찾기
-    conf_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),'.db_conn_conf.ini')
-    
+def load_db_conf(conf_path) :
+    '''
+    설정파일에서 DB 접속 정보 읽어와 config 객체 반환 ( 단일 책임 )
+    :param conf_path: main에서 경로 전달 외부 의존성 주입
+    '''
     if not os.path.exists(conf_path) :
         logger.error(f"설정 파일 못찾았습니다 : {conf_path}")
-        return None
+        return FileNotFoundError(f"설정파일 없음: {conf_path}")
 
+    config = configparser.ConfigParser() # 객체 반환
     config.read(conf_path)
 
+    # 설정 파일 내에 필요한 섹션이 있는지 검증하는 로직을 넣기도 좋습니다. ?
+    if 'mariadb' not in config:
+        logger.error("설정 파일에 'mariadb' 섹션이 없습니다.")
+        raise KeyError("Missing 'mariadb' section in config")
+    
+    return config
+
+
+
+def get_connection(config):
+    """
+    MariaDB 연결 객체 반환 : c에서 mysql_real_connect()역할 
+    """
     try:
         conn = mariadb.connect(
             user=config['mariadb']['user'],
@@ -45,8 +53,7 @@ def get_connection():
 
 def insert_news_many(conn, data_list : list) :
     '''
-    Docstring for insert_news_many
-        대량 뉴스 데이터 한번에 저장
+    대량 뉴스 데이터 한번에 저장
     :param conn: get_connection()으로 생성한 연결 객체
     :param data_list: rss_ps 에서 반환하는 튜플 리스트
     '''
@@ -56,7 +63,6 @@ def insert_news_many(conn, data_list : list) :
         logger.warning("저장 데이터가 없음 작업 중단")
         return
     
-    # sql문
     sql = """
     INSERT INTO boannews_rss (
 idx, title, link, creator, written_dt, description, category
@@ -70,23 +76,18 @@ idx, title, link, creator, written_dt, description, category
         category = VALUES(category);
     """
     
-    # 커서 생성
-    cursor = conn.cursor()
-    
     try :
-        if cursor:
-        # executemany : db와 한번 통신으로 대량 데이터 저장 가능
+        # with문 : 커서 생성 ~ 자동 닫기(with블록 벗어날때)
+        with conn.cursor() as cursor :
+            # executemany : db와 한번 통신으로 대량 데이터 저장 가능
             cursor.executemany(sql, data_list)
             conn.commit()
-            logger.info(f"db 저장 완료")
+            logger.info(f"DB에 데이터 저장 완료")
+            
     except mariadb.Error as e:
-        # 에러시 전체 작업 취소
         conn.rollback()
         logger.error(f"데이터 일괄 저장 중 오류 발생으로 rollback 수행 : {e}")
         raise e
-    finally :
-        cursor.close() # finally 블록 안에 넣어야 executemany에서 문제생기면 바로 except로 가기 때문에
-        logger.debug("db 커서 닫기 완료")
 
 
 if __name__ == "__main__" :
