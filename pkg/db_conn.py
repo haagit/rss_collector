@@ -72,7 +72,8 @@ idx, title, link, creator, written_dt, description, category
         creator = VALUES(creator),
         written_dt = VALUES(written_dt),
         description = VALUES(description),
-        category = VALUES(category);
+        category = VALUES(category),
+        save_at = CURRENT_TIMESTAMP        
     """
     
     try :

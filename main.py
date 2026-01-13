@@ -1,4 +1,5 @@
-from pkg import run_collection, load_db_conf, get_connection, insert_news_many
+from pkg.db_conn import load_db_conf, get_connection, insert_news_many
+from pkg.rss_ps import run_collection
 from pkg.logging_config import setup_logging
 import logging
 import os
