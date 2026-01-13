@@ -13,7 +13,7 @@ $PROJECT_DIR/.venv/bin/python $PROJECT_DIR/main.py >> $LOG_FILE 2>&1 && \
 (
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [성공] 수집 완료. 14일 전 데이터 정리 시작..." >> $LOG_FILE
     # .my.cnf 에 유저계정 정보 있음 비밀번호 없이 실행됨.
-    /usr/bin/mariadb -e "DELETE FROM boannews_rss WHERE save_at < DATE_SUB(NOW(), INTERVAL 14 DAY);" news_hub >> $LOG_FILE 2>&1
+    /usr/bin/mysql -e "DELETE FROM boannews_rss WHERE save_at < DATE_SUB(NOW(), INTERVAL 14 DAY);" news_hub >> $LOG_FILE 2>&1
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [완료] 데이터 정리 공정 종료." >> $LOG_FILE
 ) || \
 (
