@@ -20,7 +20,7 @@ def get_rss() :
     if not rss_asp_list :
         # rss.py에서 에러처리 하여 error로그 찍었음. 여기서는 흐름만 기록
         logger.warning("활성화된 rss 안내 페이지 찾지 못했습니다.")
-        return []
+        raise Exception("홈페이지에서 RSS안내 페이지 리스트가 비어있습니다.")
     
     rss_asp = rss_asp_list[0]
         
@@ -33,7 +33,7 @@ def get_rss() :
     
     except requests.exceptions.RequestException as e:
         logger.error(f"rss안내 페이지 ({rss_asp}) 접속 실패 : {e}")
-        return []
+        raise e
     
     html = response.text
     soup = BeautifulSoup(html,"html.parser")    # BeautifulSoup 객체 soup 생성
@@ -61,11 +61,15 @@ def get_rss() :
                 "category": category_name,
                 "url": xml_url
             })
-            
-        logger.info("메인 카테고리 내 카테고리별 xml 리스트 추출 성공 합니다")
+        # 태그는 찾았는데 결과 리스트가 비어있는 경우
+        if not rss_targets :
+            raise Exception("메인 카테고리 내 카테고리별 rss.xml 주소 리스트 찾지 못했습니다.")
+        
+        logger.info("메인 카테고리 내 카테고리별 rss.xml 주소 리스트 추출 성공 합니다")        
         return rss_targets
-    logger.warning("메인 카테고리 태그 찾지 못함")
-    return []
+    # 메인 카테고리 자체를 찾지 못한 경우
+    logger.error("메인 카테고리 태그 찾지 못함(사이트 구조 변경 의심)")
+    raise Exception("메인 카테고리 태그를 찾을 수 없습니다.")
 
 def parse_feed(target) :
     '''
@@ -133,7 +137,7 @@ def run_collection():
     logger.info("보안뉴스 RSS 수집 run_collect() 시작")
     all_collected_data = []
     
-    # RSS 목록 가져오기
+    # RSS 목록 가져오기 , get_rss() 에러 발생시 여기서 바로 main.py로 향함 아래 for문 실행x
     targets = get_rss()
     
     # 각 대상별로 기사 파싱

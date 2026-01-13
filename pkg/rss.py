@@ -22,7 +22,7 @@ def discover_feeds(page_url: str, timeout: int = 10) :
     except requests.exceptions.RequestException as e :
         # 접속실패.. 프로그램 죽지 않게 하며 로그만 남김
         logger.error(f"페이지 접속 실패 ({page_url}) : {e}")
-        return []
+        raise e
     
     soup = BeautifulSoup(r.text, "html.parser")
     feeds: list[str] = []  
