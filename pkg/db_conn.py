@@ -4,7 +4,7 @@ import logging
 import os
 import configparser
 
-logger = logging.getLogger("RSS_collector")
+logger = logging.getLogger("RSS_collector : " + __name__)
 
 def load_db_conf(conf_path) :
     '''

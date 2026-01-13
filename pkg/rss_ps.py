@@ -6,7 +6,7 @@ from urllib.parse import urlparse, parse_qs
 from datetime import datetime # datetime 모듈 안에서 datetime 클래스만 가져옴
 from bs4 import BeautifulSoup
 
-logger = logging.getLogger("RSS_collector") # 현재 모듈에 적용할 로거 생성
+logger = logging.getLogger("RSS_collector : " + __name__) # 현재 모듈에 적용할 로거 생성
 
 def get_rss() :
     '''

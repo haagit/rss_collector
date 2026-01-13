@@ -4,7 +4,7 @@ from pkg.logging_config import setup_logging
 import logging
 import os
 
-logger = logging.getLogger("RSS_collector")
+logger = logging.getLogger("RSS_collector : " + __name__)
 
 def main() :
     

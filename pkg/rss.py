@@ -4,7 +4,7 @@ import requests
 from bs4 import BeautifulSoup
 import logging
 
-logger = logging.getLogger("RSS_collector")
+logger = logging.getLogger("RSS_collector : " + __name__)
 
 def discover_feeds(page_url: str, timeout: int = 10) :
     """
