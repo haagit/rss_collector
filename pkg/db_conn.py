@@ -1,11 +1,10 @@
 # 마리아 디비 연동
 import mariadb
 import logging
-from .logging_config import setup_logging
 import os
 import configparser
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("RSS_collector")
 
 def load_db_conf(conf_path) :
     '''

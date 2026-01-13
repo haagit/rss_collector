@@ -3,11 +3,13 @@ from pkg.logging_config import setup_logging
 import logging
 import os
 
-setup_logging()
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("RSS_collector")
 
 def main() :
+    
+    setup_logging()
     logger.info("main : 보안뉴스 수집 및 db 저장 시작")
+    
     list_news = run_collection()
     
     if not list_news:
