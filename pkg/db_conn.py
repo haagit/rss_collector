@@ -1,4 +1,3 @@
-# 마리아 디비 연동
 import mariadb
 import logging
 import os
@@ -8,8 +7,8 @@ logger = logging.getLogger("RSS_collector : " + __name__)
 
 def load_db_conf(conf_path) :
     '''
-    설정파일에서 DB 접속 정보 읽어와 config 객체 반환 ( 단일 책임 )
-    :param conf_path: main에서 경로 전달 외부 의존성 주입
+    설정파일에서 DB 접속 정보 읽어와 config 객체 반환 ( 단일 책임상 get_connection()에서 분리 )
+    param conf_path: main에서 설정파일 위치 경로 전달 ( 외부 의존성 주입 )
     '''
     if not os.path.exists(conf_path) :
         logger.error(f"설정 파일 못찾았습니다 : {conf_path}")
@@ -18,7 +17,7 @@ def load_db_conf(conf_path) :
     config = configparser.ConfigParser() # 객체 반환
     config.read(conf_path)
 
-    # 설정 파일 내에 필요한 섹션이 있는지 검증하는 로직을 넣기도 좋습니다. ?
+    # 설정 파일 내에 필요한 섹션이 있는지 검증
     if 'mariadb' not in config:
         logger.error("설정 파일에 'mariadb' 섹션이 없습니다.")
         raise KeyError("Missing 'mariadb' section in config")
@@ -29,8 +28,13 @@ def load_db_conf(conf_path) :
 
 def get_connection(config):
     """
-    MariaDB 연결 객체 반환 : c에서 mysql_real_connect()역할 
+    mariadb라이브러리 connect() :MariaDB 연결 객체 반환 : c에서 mysql_real_connect()역할 
+    
+    param config : 메인에서 load_db_conf()반환값인 config : ConfigParser 객체 전달
+    
+    return conn : connect()결과 생성된 connection 객체(?)
     """
+    # TODO : 재시도 로직 for문, 지연시간 조절 : time.slee(2), 오류 조건부로 대응하게 설계, 상세 로그 기록
     try:
         conn = mariadb.connect(
             user=config['mariadb']['user'],
@@ -52,9 +56,14 @@ def get_connection(config):
 
 def insert_news_many(conn, data_list : list) :
     '''
-    대량 뉴스 데이터 한번에 저장
-    :param conn: get_connection()으로 생성한 연결 객체
-    :param data_list: rss_ps 에서 반환하는 튜플 리스트
+    대량 뉴스 데이터 한번에 Mariadb서버에 저장
+    conn.cursor() :
+    cursor.exeutemany() :
+    conn.commit()
+    conn.rollback()
+    
+    param conn : get_connection()으로 생성한 연결 객체
+    param data_list : rss_ps 에서 반환하는 튜플 리스트
     '''
     sql: str=" "
     
@@ -94,8 +103,8 @@ if __name__ == "__main__" :
     try :
         conn = get_connection()
         
-        # 2. 테스트 데이터 생성 (튜플 리스트 형태)
-        # 컬럼 순서: title, link, creator, written_dt, description, category, idx
+        # 테스트 데이터 생성 (튜플 리스트 형태)
+        # TODO : 컬럼 순서 수정된 내용 반영
         test_data = [
             (
                 "테스트 뉴스 제목 1", 
@@ -116,7 +125,7 @@ if __name__ == "__main__" :
                 999998
             )
         ]
-        # 3. 데이터 삽입 테스트
+        # 데이터 삽입 테스트
         print("[*] 데이터 삽입 시도 중...")
         insert_news_many(conn, test_data)
         print("[+] 테스트 성공: DB를 확인해 보세요.")

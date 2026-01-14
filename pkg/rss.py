@@ -9,12 +9,13 @@ logger = logging.getLogger("RSS_collector : " + __name__)
 def discover_feeds(page_url: str, timeout: int = 10) :
     """
     page_url(웹페이지)에서 RSS/Atom 피드 링크를 발견해서 절대 URL 목록으로 반환.
-    우선순위:
+    우선순위
       1) <link rel="alternate" type="application/rss+xml|application/atom+xml"...>
       2) 본문 <a href="...rss|atom|feed|.xml"> 형태 휴리스틱
     """
     headers = {"User-Agent": "Mozilla/5.0 (RSS-Discovery/1.0)"}
-    ## 외부 통신 부분 예외처리
+    ## 외부 통신 부분 
+    # TODO : 재시도 로직 전략 Retry기능(표준화) : requests.adapters -> HTTPAdapter, urllib3.util.retry -> Retry, requests.Session()
     try :
         logger.info(f"피드 탐색 시도 : {page_url}")
         r = requests.get(page_url, headers=headers, timeout=timeout)

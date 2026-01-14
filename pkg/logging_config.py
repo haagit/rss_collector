@@ -7,17 +7,15 @@ def setup_logging(log_path: str="logs/app.log") -> None :
         주어지지 않으면 logs/app.log 에 로깅 하도록 설정.
         - 매일 자정 새로운 로그파일 생성. (전날 로그는 app.log.yyyymmdd 파일로 저장 됨)
         - 14 일 경과한 파일은 자동 삭제        
-
     Args:
         log_path (str, optional): _description_. Defaults to "logs/app.log".
     """
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)    # 개발 서버는 INFO / 운영 서버는 ERROR 레벨 권장.
-    # logging.DEBUG는 필터링 역할
     
     if root.handlers :
         return
-    # TimeRotatingFileHandler() : 파일에 적는 기능
+    # TimeRotatingFileHandler() : 서버 용량 관리 자동
     handler = TimedRotatingFileHandler(
         log_path,
         when = "midnight",

@@ -1,5 +1,7 @@
 #! /bin/bash
 
+# clean_db.sh / collect_rss.sh 두개로 구분해서 작성할것
+
 # 1. 프로젝트 경로 설정 (실제 환경 확인)
 PROJECT_DIR="/home/rdbbot/rss_collector"
 LOG_FILE="$PROJECT_DIR/logs/app.log"
