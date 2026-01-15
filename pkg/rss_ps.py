@@ -1,15 +1,9 @@
-"""rss_ps 모듈
-get_rss()            : rss모듈의 discover_feeds() 통해서 url 홈페이지 내 rss안내 페이지 링크 추출
-parse_feed()         : 
-def run_collection() : 
+"""rss_ps 모듈 전체 실행 흐름
+run_collection() 시작 -> get_rss() 호출 -> parse_feed()호출 -> 모든 데이터 하나의 리스트로 병합 -> main 반환
+get_rss()            : rss모듈의 discover_feeds() 통해서 url 홈페이지 내 rss안내 페이지 url 추출 반환
+parse_feed()         : idx, title, link, written_dt등 DB컬럼에 맞는 데이터 추출하여 튜플로 구성 반환
 
-
-Raises:
-    Exception: _description_
-        e: _description_
-        Exception: _description_
-        Exception: _description_
-
+Raises: 해당 모듈 내 발생하는 모든 에러는 main으로 전파
 
 """
 
@@ -32,7 +26,7 @@ def get_rss() :
     # 1.
     url = "https://www.boannews.com/"
     
-    rss_asp_list = rss.discover_feeds(url)
+    rss_asp_list = rss.discover_feeds(url) # discover_feeds()에러 발생시 바로 호출부 이동 -> rss_collection()
     if not rss_asp_list :
         # rss.py에서 에러처리 하여 error로그 찍었음. 여기서는 흐름만 기록
         logger.warning("활성화된 rss 안내 페이지 찾지 못했습니다.")
@@ -70,7 +64,7 @@ def get_rss() :
         for inp in target_inputs:
             xml_url = inp.get('value')
         
-            # 카테고리 이름은 같은 행(tr)의 첫 번째 칸(td)에서 가져옵니다.
+            # 카테고리 이름은 같은 행(tr)의 첫 번째 칸(td)에서 가져옴.
             parent_tr = inp.find_parent('tr')
             category_name = parent_tr.find('td').get_text(strip=True)
         
@@ -90,49 +84,52 @@ def get_rss() :
 
 def parse_feed(target) :
     '''
-    1. feedparser.parse() : 세부 카테고리의 url에 네트워크 통신접속, 규격화된 구조 -> feedparser 사용
+    1. feedparser.parse() : 세부 카테고리의 url에 네트워크 통신접속 xml 데이터 다운로드 파이썬 객체로 파싱, 규격화된 구조 -> feedparser 사용
     2. 규격화된 rss/atom피드 전용 태그들 파싱
         2-1. urllib.parse 라이브러리 urlparse(),parse_qs() : db테이블 컬럼에 맞는 데이터 분리
         2-2. datetime 라이브러리 strptime() : datetime 객체로 반환 , 날짜 시간 형식 변환 
-    3. return : 1개의 기사에 대한 컬럼 데이터 튜플로 구성 -> run_collection()
-    
-    param target : run_collection()에서 전달받은 카테고리 ( security, it, safety, SecurityWorld 순서 )
+    3. return : 1개의 기사에 대한 컬럼 데이터 튜플들의 리스트로 구성(없으면 [])  -> run_collection()
+                튜플 구조 (idx(int), title(str), link(str), creator(str), written_dt(str), description(str), category(str))
+    param target : run_collection()에서 전달받은 카테고리 security, it, safety, SecurityWorld 순서로 {'category': 'IT', 'url': '...'} 형태
     '''
     collected_data = []
     logger.debug(f"파싱시작 카테고리 {target['category']}")
     
-    # 1.
-    feed = feedparser.parse(target['url'])  # feedparser 내부적으로 네트워크 실패시 빈 feed객체 반환
+    # 1. rss 데이터 로드
+    feed = feedparser.parse(target['url'])  # feedparser 내부적으로 네트워크 연결 실패시 빈 feed객체 반환
     if not feed.entries:
         logger.info(f"해당 [{target['category']}]에 새로운 기사가 없습니다.")
         return []
     
-    # 2. 
-    # 2-1.
-    # idx 추출 , 없으면 제외 / urllib.parse 라이브러리 : urlparse(), parse_qs()
-    for entry in feed.entries :
-        target_link = entry.link
-        target_query = urlparse(target_link).query        # urlparse() : url 에서 ? 뒷부분 질의문을 문자열로 남김
-        target_idx = parse_qs(target_query).get('idx',[None])[0] # parse_qs() : 질의문 문자열을 딕셔너리로 변환
-        
-        # 2-2.
-        raw_date = entry.get('published','')
-        written_dt = ""
-        if raw_date :
-            try :
-                dt_obj = datetime.strptime(raw_date,'%a, %d, %b, %Y, %H:%M:%S %z')
-                # mariadb DATETIME 형식(YYYY-MM-DD HH:MM:SS)으로 변환
-                written_dt = dt_obj.strftime('%Y-%m-%d %H:%M:%S')
-            except Exception as e :
-                logger.warning(f"날짜 변환 실패 {raw_date}:{e}")
+    # 2. 기사 순회 ( 각 기사별 예외 처리 )
+    for entry in feed.entries : # feed.entries 리스트 하나씩 순회하며 개별 기사 접근
+        try :
+            target_link = entry.link
+            logger.debug(f"접근 대상 기사 : {target_link}")
+            # urllib.parse 라이브러리 : urlparse(), parse_qs() -> url내 ?idx=123 값을 찾아옴
+            # urlparse() : url 에서 ? 뒷부분 질의문을 문자열로 남김
+            target_query = urlparse(target_link).query
+            # parse_qs() : 질의문 문자열을 딕트[list]로 변환, get(key) : key의 value        
+            # get() : idx 키의 value 추출, 없으면 None 비어있으면 '' 반환 
+            target_idx = parse_qs(target_query).get('idx',[None])[0] 
+            if not target_idx :
+                # None,'',0 등 false -> db저장 불가 해당 기사 건너뛰기
+                logger.warning(f"idx 추출 실패: {target['category']} - {entry.title[:15]}")
+                continue
+            # 날짜 변환 (실패시 현재 시간 대체)
+            raw_date = entry.get('published','')
+            written_dt = ""
+            if raw_date :
+                try :
+                    dt_obj = datetime.strptime(raw_date,'%a, %d, %b, %Y, %H:%M:%S %z')
+                    # strftime() : datetime으로 포맷한 객체를 Mariadb DATETIME 형식(YYYY-MM-DD HH:MM:SS)으로 변환 후 문자열로 반환
+                    written_dt = dt_obj.strftime('%Y-%m-%d %H:%M:%S')
+                except Exception as e :
+                    logger.warning(f"날짜 변환 실패 {raw_date}:{e}로 현재시간 대체")
+                    written_dt = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            else :
                 written_dt = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        else :
-            written_dt = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        
-        # 3.
-        # 배열 순서 = 컬럼순서 주의
-        # get() : feedparser 내장 함수 ('찾는거','없을때 기본값')
-        if target_idx :
+                
             news_data_set = (
             int(target_idx)                         # idx (Unique Key)
                 ,entry.title.strip()                # title
@@ -143,8 +140,11 @@ def parse_feed(target) :
                 ,target['category']                 # category
             )
             collected_data.append(news_data_set)
-        else :
-            logger.warning(f"idx 추출 실패: {target['category']} - {entry.title[:15]}")
+        except Exception as e :
+            # 기사 한건마다 처리 중 발생하는 모든 예상치 못한 에러에 대해 전체 수집과정 멈추지 않고 지속.
+            logger.error(f"기사 처리 중 예외 발생하여 해당 기사 건너뜁니다: {e}")
+            continue
+        
     return collected_data    
 
 def run_collection():
