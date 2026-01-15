@@ -2,6 +2,7 @@ import mariadb
 import logging
 import os
 import configparser
+import time
 
 logger = logging.getLogger("RSS_collector : " + __name__)
 
@@ -27,7 +28,7 @@ def load_db_conf(conf_path) :
 
 
 
-def get_connection(config):
+def get_connection(config, retries=3, delay=2):
     """
     MariaDB서버와 통신 채널 여는 기능, 파이썬-마리아디비 커넥터 mariadb 라이브러리
     connect() :MariaDB 연결 객체 반환 ( c에서 mysql_real_connect()역할 ) 
@@ -37,25 +38,23 @@ def get_connection(config):
     param config : 메인에서 load_db_conf()가 반환한 config : ConfigParser 객체
     return conn : connect()결과 생성된 연결 객체
     """
-    # TODO : 재시도 로직 for문, 지연시간 조절 : time.slee(2), 오류 조건부로 대응하게 설계, 상세 로그 기록
-    try:
-        conn = mariadb.connect(
-            user=config['mariadb']['user'],
-            password=config['mariadb']['password'].strip("'"), # 따옴표가 있어도 제거
-            host=config['mariadb']['host'],
-            port=int(config['mariadb']['port']),
-            database=config['mariadb']['database'] 
-        )
-        return conn
-    
-    except mariadb.Error as e:
-        logger.error(f"MariaDB 연결 실패: {e}")
-        raise e
-    
-    except KeyError as e:
-        logger.error(f"설정 파일에서 키를 찾을 수 없습니다: {e}")
-        raise e
-    
+    for i in range(retries) :
+        try:
+            conn = mariadb.connect(
+                user=config['mariadb']['user'],
+                password=config['mariadb']['password'].strip("'"), # 따옴표가 있어도 제거
+                host=config['mariadb']['host'],
+                port=int(config['mariadb']['port']),
+                database=config['mariadb']['database'] 
+            )
+            return conn
+        except mariadb.Error as e :
+            if i < ( retries-1 ) :
+                time.sleep(delay)
+            else :
+                logger.error(f"연결 가능한 접속 시도 횟수 초과")
+                raise ConnectionError(f"DB접속 최종 실패({retries}회 시도)") from e
+
 
 def insert_news_many(conn, data_list : list, table_name : str = "boannews_rss") :
     '''
