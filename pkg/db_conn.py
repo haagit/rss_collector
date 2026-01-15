@@ -57,7 +57,7 @@ def get_connection(config):
         raise e
     
 
-def insert_news_many(conn, data_list : list) :
+def insert_news_many(conn, data_list : list, table_name : str = "boannews_rss") :
     '''
     대량 뉴스 데이터 한번에 Mariadb서버에 저장
     conn.cursor() :
@@ -74,8 +74,8 @@ def insert_news_many(conn, data_list : list) :
         logger.warning("저장 데이터가 없음 작업 중단")
         return
     
-    sql = """
-    INSERT INTO boannews_rss (
+    sql = f"""
+    INSERT INTO {table_name} (
 idx, title, link, creator, written_dt, description, category
     ) VALUES (%s, %s, %s, %s, %s, %s, %s)
     ON DUPLICATE KEY UPDATE
@@ -103,11 +103,11 @@ idx, title, link, creator, written_dt, description, category
 
 if __name__ == "__main__" :
     try :
-        current_dir_path = os.path.dirname(os.path.abspath(__file__))
-        parent_path = os.path.dirname(current_dir_path) # pkg상위 rss_collector 폴더 경로
-        test_conf_path = os.path.join(parent_path, ".db_conn_conf.ini")
-        conf_obj = load_db_conf(test_conf_path)
-        conn = get_connection(conf_obj)
+        current_dir_path = os.path.dirname(os.path.abspath(__file__)) # 현재파일 위치 : "/home/user/rss_collector/pkg" 
+        parent_path = os.path.dirname(current_dir_path) # pkg상위 rss_collector 폴더 경로  : "/home/user/rss_collector"
+        test_conf_path = os.path.join(parent_path, ".db_conn_conf.ini") # 최종 설정파일 전체 경로 : "/home/user/rss_collector/.db_conn_conf.ini"
+        conf_obj = load_db_conf(test_conf_path) # 설정파일을 읽어 메모리에 올린 객체 [][] 접근가능
+        conn = get_connection(conf_obj)         # 실제 MariaDB 서버와 연결된 세션 객체
         
         # 테스트 데이터 생성 [(튜플)] : idx, title, link, creator, written_dt, description, category
         test_data = [
@@ -116,7 +116,7 @@ if __name__ == "__main__" :
         ]
         # 데이터 삽입 테스트
         print("[*] 데이터 삽입 시도 중...")
-        insert_news_many(conn, test_data)
+        insert_news_many(conn, test_data, table_name = "test_news_tb")
         print("[+] 테스트 성공: DB를 확인해 보세요.")
     except Exception as e:
         print(f"[-] 테스트 실패: {e}")
