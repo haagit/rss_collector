@@ -9,7 +9,6 @@ logger = logging.getLogger("RSS_collector : " + __name__)
 
 def main() :
     
-    setup_logging()
     logger.info("main : 보안뉴스 수집 및 db 저장 시작")
     
     # 파일 경로 설정 : __file__은 현재 이 파일의 위치, os.path 사용해서 상위폴더 경로 찾기
@@ -46,4 +45,7 @@ def main() :
             logger.info("db연결 안전하게 닫힘")
             
 if __name__ == "__main__" :
+    main_abs_path = os.path.dirname(os.path.abspath(__file__)) # 현재 main.py 위치 기준 절대 경로 생성
+    log_abs_path = os.path.join(main_abs_path,"logs","app.log") # # /home/rdbbot/rss_collector/logs/app.log 생성
+    setup_logging(log_path=log_abs_path)
     main()

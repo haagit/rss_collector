@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# 경로 설정
+# 경로 설정 (리눅스에서 확인 필요)
 PROJECT_DIR="/home/rdbbot/rss_collector"
-PYTHON_BIN="$PROJECT_DIR/.venv/bin/python"
+PYTHON_BIN="$PROJECT_DIR/.venv/bin/python3"
 LOG_FILE="$PROJECT_DIR/logs/app.log"
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] === 수집 프로세스 시작 ===" >> $LOG_FILE

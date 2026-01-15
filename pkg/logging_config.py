@@ -1,5 +1,6 @@
 import logging
 from logging.handlers import TimedRotatingFileHandler
+import os
 
 def setup_logging(log_path: str="logs/app.log") -> None :
     """로깅 설정
@@ -10,6 +11,11 @@ def setup_logging(log_path: str="logs/app.log") -> None :
     Args:
         log_path (str, optional): _description_. Defaults to "logs/app.log".
     """
+    log_dir = os.path.dirname(log_path) # 전달받은 경로 폴더부분 추출
+    #폴더 없으면 생성(중복에러 방지exist_ok=True)
+    if log_dir and not os.path.exists(log_dir) :
+            os.makedirs(log_dir, exist_ok=True)
+            
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)    # 개발 서버는 INFO / 운영 서버는 ERROR 레벨 권장.
     

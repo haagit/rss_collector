@@ -2,7 +2,7 @@
 # 파이썬 코드 거치지 않고 정해진 시간에 MariaDB에 직접 접속 -> Delete명령만 실행시킴
 PROJECT_DIR="/home/rdbbot/rss_collector"
 LOG_FILE="$PROJECT_DIR/logs/app.log"
-MYSQL_BIN="/usr/bin/mysql"
+MYSQL_BIN="/usr/bin/mysql"              # 리눅스에서 경로확인 which mysql
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] [점검] 오전 9시 전 데이터 정리 (14일 경과 대상)" >> $LOG_FILE
 

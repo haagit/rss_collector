@@ -12,18 +12,21 @@ def load_db_conf(conf_path) :
     param conf_path: main에서 설정파일 위치 경로 전달 ( 외부 의존성 주입 )
     '''
     # 설정파일 존부 체크 
-    if not os.path.exists(conf_path) :
-        logger.error(f"설정 파일 못찾았습니다 : {conf_path}")
+    # if not os.path.exists(conf_path) :
+    #     logger.error(f"설정 파일 못찾았습니다 : {conf_path}")
+    #     raise FileNotFoundError(f"설정파일 없음: {conf_path}")
+
+    # 1. 파일 읽기 시도 및 인코딩 명시
+    config = configparser.ConfigParser()                  # 객체 반환
+    if config.read(conf_path,encoding="utf-8") ==[] :     # 비어있는 객체(config) 내부 완성, 실패시 비어있는[], read()가 내부적으로 파일 열고닫음
+        logger.error(f"설정 파일 못찾았습니다. 경로 및 권한 확인 :{conf_path}")
         raise FileNotFoundError(f"설정파일 없음: {conf_path}")
-
-    config = configparser.ConfigParser() # 객체 반환
-    config.read(conf_path)
-
-    # 설정 파일 내에 필요한 섹션이 있는지 검증
+    
+    # 2. 설정 파일 내에 필요한 섹션이 있는지 검증
     if 'mariadb' not in config:
         logger.error("설정 파일에 '[mariadb]' 섹션이 없습니다.")
         raise KeyError("Missing '[mariadb]' section in config")
-    
+    logger.info(f"설정 파일 로드 및 검증 완료: {conf_path}")
     return config
 
 
@@ -42,7 +45,7 @@ def get_connection(config, retries=3, delay=2):
         try:
             conn = mariadb.connect(
                 user=config['mariadb']['user'],
-                password=config['mariadb']['password'].strip("'"), # 따옴표가 있어도 제거
+                password=config['mariadb']['password'].strip("'").strip(), # 따옴표,공백 제거
                 host=config['mariadb']['host'],
                 port=int(config['mariadb']['port']),
                 database=config['mariadb']['database'] 
@@ -122,4 +125,4 @@ if __name__ == "__main__" :
     finally:
         if 'conn' in locals() and conn:
             conn.close()
-            print("[*] DB 연결 종료")
+            print("[*] DB 연결 종료. 테스트를 종료합니다.")
